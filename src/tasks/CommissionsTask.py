@@ -3,6 +3,7 @@ import time
 import cv2
 from enum import Enum
 
+from ok import find_boxes_by_name
 from src.tasks.BaseDNATask import isolate_white_text_to_black
 from src.tasks.BaseCombatTask import BaseCombatTask
 
@@ -25,12 +26,14 @@ class CommissionsTask(BaseCombatTask):
             '使用技能': '不使用',
             '技能释放频率': 5,
             '启用自动穿引共鸣': True,
-            '发出声音提醒': True
+            '发出声音提醒': True,
+            '自动选择首个密函和密函奖励': True
         })
         self.config_description.update({
             '技能释放频率': '毎几秒释放一次技能',
             '启用自动穿引共鸣': '在需要跑图时时启用触发任务的自动穿引共鸣',
-            '发出声音提醒': '在需要时发出声音提醒'
+            '发出声音提醒': '在需要时发出声音提醒',
+            '自动选择首个密函和密函奖励': '刷武器密函时不建议使用'
         })
         self.config_type['委托手册'] = {'type': 'drop_down', 'options': ['不使用', '100%', '200%', '800%', '2000%']}
         self.config_type['使用技能'] = {'type': 'drop_down', 'options': ['不使用', '战技', '终结技']}
@@ -204,6 +207,14 @@ class CommissionsTask(BaseCombatTask):
     def handle_mission_interface(self, stop_func=lambda: False):
         if self.in_team():
             return False
+        if self.config.get('自动选择首个密函和密函奖励'):
+            if self.find_next_hint(0.47,0.81,0.53,0.85,r'确认选择'):
+                self.click(0.50, 0.83, after_sleep=0.5)
+                return False
+            elif self.find_next_hint(0.68,0.39,0.73,0.43,r'选择密函'):
+                self.click(0.56, 0.5, after_sleep=0.5)
+                self.click(0.79, 0.61, after_sleep=0.5)
+                return False
         if self.find_bottom_start_btn() or self.find_retry_btn():
             self.start_mission()
             return Mission.START
@@ -211,6 +222,9 @@ class CommissionsTask(BaseCombatTask):
             if stop_func():
                 return Mission.STOP
             self.continue_mission()
+            if self.config.get('自动选择首个密函和密函奖励') and self.find_next_hint(0.68,0.39,0.73,0.43,r'选择密函'):
+                self.click(0.56, 0.5, after_sleep=0.5)
+                self.click(0.79, 0.61, after_sleep=0.5)
             return Mission.CONTINUE
         elif self.find_esc_menu():
             self.give_up_mission()
@@ -220,6 +234,14 @@ class CommissionsTask(BaseCombatTask):
             self.choose_drop_rate()
             return Mission.START
         return False
+        
+    def find_next_hint(self, x1, y1, x2, y2, s, box_name='hint_text'):
+        texts = self.ocr(box=self.box_of_screen(x1, y1, x2, y2, hcenter=True),
+                         target_height=540, name=box_name)
+        fps_text = find_boxes_by_name(texts,
+                                      re.compile(s, re.IGNORECASE))
+        if fps_text:
+            return True
 
 class QuickMoveTask:
     def __init__(self, owner: CommissionsTask):
