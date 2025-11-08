@@ -86,6 +86,14 @@ class Auto70jjbTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                 self.walk_to_aim()
                 win32gui.SendMessage(self.hwnd.hwnd, win32con.WM_KEYUP, 0xA4, 0)
                 _wave_start = time.time()
+                self.current_wave = -1
+                while self.current_wave == -1 and time.time() - _wave_start < 2:
+                    self.get_wave_info()
+                    self.sleep(0.2) 
+                if self.current_wave == -1:
+                    self.log_info('未正确到达任务地点')
+                    self.open_in_mission_menu()
+                    self.sleep(0.5)   
             elif _status == Mission.CONTINUE:
                 self.log_info('任务继续')
                 self.wait_until(self.in_team, time_out=30)
@@ -127,13 +135,21 @@ class Auto70jjbTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
     def reset_and_transport(self):
         self.open_in_mission_menu()
         self.sleep(0.8)
-        self.click(0.73, 0.92, after_sleep=0.8)
-        self.click(0.35, 0.03, after_sleep=0.8)
+        self.wait_until(lambda: self.find_next_hint(0.05, 0.01, 0.09, 0.05, r'设置'),
+                        post_action=self.click(0.73, 0.92, after_sleep=0.5),
+                        time_out=2)
+        self.wait_until(lambda: self.find_next_hint(0.06, 0.29, 0.12, 0.33, r'重置位置'),
+                        post_action=self.click(0.35, 0.03, after_sleep=0.5),
+                        time_out=2)
         self.move_mouse_to_safe_position()
-        self.click(0.60, 0.32)
+        self.wait_until(lambda: self.find_next_hint(0.57, 0.54, 0.62, 0.58, r'确定'),
+                        post_action=self.click(0.60, 0.32, after_sleep=0.5),
+                        time_out=2)
         self.move_back_from_safe_position()
-        self.sleep(0.8)
-        self.click(0.59, 0.56, after_sleep=1)
+        self.wait_until(self.in_team,
+                        post_action=self.click(0.59, 0.56, after_sleep=0.5),
+                        time_out=2)
+        
         
     def walk_to_aim(self):   
         if self.find_next_hint(0.18,0.52,0.23,0.55,r'保护目标'):
