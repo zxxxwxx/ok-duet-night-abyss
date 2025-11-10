@@ -330,27 +330,37 @@ class CommissionsTask(BaseCombatTask):
         fps_text = find_boxes_by_name(texts, re.compile(s, re.IGNORECASE))
         if fps_text:
             return True
-        
+
     def reset_and_transport(self):
         self.open_in_mission_menu()
         self.sleep(0.8)
-        self.wait_until(lambda: self.find_next_hint(0.05, 0.01, 0.09, 0.05, r'设置'),
-                        post_action=self.click(0.73, 0.92, after_sleep=0.5),
-                        time_out=2)
-        self.wait_until(lambda: self.find_next_hint(0.06, 0.29, 0.12, 0.33, r'重置位置'),
-                        post_action=self.click(0.35, 0.03, after_sleep=0.5),
-                        time_out=2)
-        self.wait_until(lambda: self.find_next_hint(0.57, 0.54, 0.62, 0.58, r'确定'),
-                        post_action=lambda: (
-                            self.move_mouse_to_safe_position(),
-                            self.click(0.60, 0.32),
-                            self.move_back_from_safe_position(),
-                            self.sleep(1)
-                        ),
-                        time_out=4)
-        self.wait_until(self.in_team,
-                        post_action=self.click(0.59, 0.56, after_sleep=0.5),
-                        time_out=2)
+        self.wait_until(
+            condition=lambda: not self.find_esc_menu(),
+            post_action=self.click(0.73, 0.92, after_sleep=0.5),
+            time_out=2,
+        )
+        other_box = self.box_of_screen_scaled(2560, 1440, 849, 16, 952, 79, name="other_section", hcenter=True)
+        self.wait_until(
+            condition=lambda: self.calculate_color_percentage(setting_menu_selected_color, other_box) > 0.12,
+            post_action=self.click(0.35, 0.03, after_sleep=0.5),
+            time_out=2,
+        )
+        confirm_box = self.box_of_screen_scaled(2560, 1440, 1298, 776, 1368, 843, name="confirm_btn", hcenter=True)
+        self.wait_until(
+            condition=lambda: self.find_start_btn(box=confirm_box),
+            post_action=lambda: (
+                self.move_mouse_to_safe_position(),
+                self.click(0.60, 0.32),
+                self.move_back_from_safe_position(),
+                self.sleep(1),
+            ),
+            time_out=4,
+        )
+        self.wait_until(
+            condition=self.in_team,
+            post_action=self.click(0.59, 0.56, after_sleep=0.5),
+            time_out=2,
+        )
 
 
 class QuickMoveTask:
@@ -371,3 +381,10 @@ class QuickMoveTask:
     def reset(self):
         if self.owner._move_task:
             self.owner._move_task.reset()
+
+
+setting_menu_selected_color = {
+    'r': (220, 255),  # Red range
+    'g': (200, 255),  # Green range
+    'b': (125, 255)  # Blue range
+}
