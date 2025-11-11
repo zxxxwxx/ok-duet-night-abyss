@@ -34,6 +34,14 @@ class AutoExpulsion(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
 
         self.default_config.pop("启用自动穿引共鸣", None)
         self.action_timeout = 10
+        self.external_movement = lambda: False
+
+    def config_external_movement(self, func: callable, config: dict):
+        if callable(func):
+            self.external_movement = func
+        else:
+            self.external_movement = lambda: False
+        self.config.update(config)
 
     def run(self):
         DNAOneTimeTask.run(self)
@@ -68,13 +76,17 @@ class AutoExpulsion(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             _status = self.handle_mission_interface()
             if _status == Mission.START:
                 self.wait_until(self.in_team, time_out=30)
-                if _count >= self.config.get("刷几次", 999):
-                    self.sleep(1)
-                    self.open_in_mission_menu()
-                    self.log_info_notify("任务终止")
-                    self.soundBeep()
-                    return
-                self.log_info("任务开始")
+                if self.external_movement() == False:
+                    if _count >= self.config.get("刷几次", 999):
+                        self.sleep(1)
+                        self.open_in_mission_menu()
+                        self.log_info_notify("任务终止")
+                        self.soundBeep()
+                        return
+                    self.log_info_notify("任务开始")
+                else:
+                    self.log_info("任务开始")
+                self.init_param()
                 self.sleep(2.5)
                 _start_time = 0
             self.sleep(0.2)

@@ -17,6 +17,8 @@ from src.tasks.CommissionsTask import CommissionsTask, Mission, QuickMoveTask
 from src.tasks.BaseCombatTask import BaseCombatTask
 
 from src.tasks.AutoDefence import AutoDefence
+from src.tasks.AutoExpulsion import AutoExpulsion
+from src.tasks.AutoExploration import AutoExploration
 
 logger = Logger.get_logger(__name__)
 
@@ -31,13 +33,18 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
 
         self.default_config.update({
             '轮次': 10,
-            '外部文件夹': ""
+            '外部文件夹': "",
+            '副本类型': "默认"
         })
         self.config_type['外部文件夹'] = {
             "type": "drop_down",
             "options": self.load_direct_folder(f'{Path.cwd()}\mod'),
         }
 
+        self.config_type['副本类型'] = {
+            "type": "drop_down",
+            "options": ["默认", "扼守无尽", "探险无尽", "驱离"],
+        }
         self.setup_commission_config()
         keys_to_remove = ["启用自动穿引共鸣"]
         for key in keys_to_remove:
@@ -65,8 +72,18 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         self.img = self.load_png_files(f'{path}\mod\{self.config.get('外部文件夹')}\map')
         DNAOneTimeTask.run(self)
         self.move_mouse_to_safe_position()
+        _to_do_task = self
         try:
-            return self.do_run()
+            if self.config.get('副本类型') == '扼守无尽':
+                _to_do_task = self.get_task_by_class(AutoDefence)
+                _to_do_task.config_external_movement(self.walk_to_aim, self.config)
+            elif self.config.get('副本类型') == '探险无尽':
+                _to_do_task = self.get_task_by_class(AutoExploration)
+                _to_do_task.config_external_movement(self.walk_to_aim, self.config)
+            elif self.config.get('副本类型') == '驱离':
+                _to_do_task = self.get_task_by_class(AutoExpulsion)
+                _to_do_task.config_external_movement(self.walk_to_aim, self.config)
+            return _to_do_task.do_run()
         except TaskDisabledException as e:
             pass
         except Exception as e:
@@ -122,11 +139,6 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                 self.current_wave = -1
                 _wave_start = time.time()
             self.sleep(0.2)
-
-    def foo(self):
-        _to_do_task = self.get_task_by_class(AutoDefence)
-        _to_do_task.config_external_movement(lambda: True, self.config)
-        _to_do_task.do_run()
     
     def init_param(self):
         self.delay_index = None
@@ -181,13 +193,13 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             while map_index is None and time.time() - start < 5:    
                 map_index, count = self.match_map(former_index)
                 if count == 0:
-                    return False
+                    return True
             if map_index is not None:            
                 self.log_info(f'执行{map_index}')
                 self.play_macro_actions(map_index)
                 former_index = map_index
             else:
-                return False
+                return True
         
     def match_map(self, index, max_conf = 0):
         box = self.box_of_screen_scaled(2560, 1440, 1, 1, 2559, 1439, name="full_screen", hcenter=True)
