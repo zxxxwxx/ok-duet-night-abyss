@@ -5,7 +5,7 @@
         "description": "COCO Label Conversion",
         "contributor": "CVHub",
         "url": "https://github.com/CVHub520/X-AnyLabeling",
-        "date_created": "2025-11-10"
+        "date_created": "2025-11-12"
     },
     "licenses": [
         {
@@ -87,11 +87,16 @@
         },
         {
             "id": 15,
-            "name": "start_icon",
+            "name": "setting_other",
             "supercategory": ""
         },
         {
             "id": 16,
+            "name": "start_icon",
+            "supercategory": ""
+        },
+        {
+            "id": 17,
             "name": "track_point",
             "supercategory": ""
         }
@@ -177,6 +182,15 @@
             "width": 2560,
             "date_captured": null,
             "id": 8
+        },
+        {
+            "license": 0,
+            "url": null,
+            "file_name": "images/9.png",
+            "height": 2160,
+            "width": 3840,
+            "date_captured": null,
+            "id": 9
         }
     ],
     "annotations": [
@@ -228,7 +242,7 @@
         {
             "id": 3,
             "image_id": 1,
-            "category_id": 15,
+            "category_id": 16,
             "bbox": [
                 1961.093117408907,
                 1414.2105263157894,
@@ -303,7 +317,7 @@
         {
             "id": 8,
             "image_id": 4,
-            "category_id": 16,
+            "category_id": 17,
             "bbox": [
                 3064.4073455759603,
                 1077.1285475792988,
@@ -416,6 +430,21 @@
                 91.71779141104298
             ],
             "area": 7736.930257066492,
+            "iscrowd": 0,
+            "ignore": 0,
+            "segmentation": []
+        },
+        {
+            "id": 16,
+            "image_id": 9,
+            "category_id": 15,
+            "bbox": [
+                1307.2451398767187,
+                20.540540540540544,
+                79.24134660976756,
+                79.45945945945945
+            ],
+            "area": 6296.4745684518,
             "iscrowd": 0,
             "ignore": 0,
             "segmentation": []

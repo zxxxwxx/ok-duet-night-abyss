@@ -344,10 +344,11 @@ class CommissionsTask(BaseDNATask):
             post_action=self.click(0.73, 0.92, after_sleep=0.5),
             time_out=2,
         )
-        other_box = self.box_of_screen_scaled(2560, 1440, 849, 16, 952, 79, name="other_section", hcenter=True)
+        setting_box = self.box_of_screen_scaled(2560, 1440, 738, 4, 1123, 79, name="other_section", hcenter=True)
+        setting_other = self.wait_until(lambda: self.find_one("setting_other", box=setting_box), time_out=10, raise_if_not_found=True)
         self.wait_until(
-            condition=lambda: self.calculate_color_percentage(setting_menu_selected_color, other_box) > 0.12,
-            post_action=self.click(0.35, 0.03, after_sleep=0.5),
+            condition=lambda: self.calculate_color_percentage(setting_menu_selected_color, setting_other) > 0.12,
+            post_action=self.click_box(setting_other, after_sleep=0.5),
             time_out=2,
         )
         confirm_box = self.box_of_screen_scaled(2560, 1440, 1298, 776, 1368, 843, name="confirm_btn", hcenter=True)
