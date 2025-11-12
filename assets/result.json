@@ -5,7 +5,7 @@
         "description": "COCO Label Conversion",
         "contributor": "CVHub",
         "url": "https://github.com/CVHub520/X-AnyLabeling",
-        "date_created": "2025-11-12"
+        "date_created": "2025-11-13"
     },
     "licenses": [
         {
@@ -188,8 +188,8 @@
             "license": 0,
             "url": null,
             "file_name": "images/8.png",
-            "height": 1440,
-            "width": 2560,
+            "height": 2160,
+            "width": 3840,
             "date_captured": null,
             "id": 8
         },
@@ -201,24 +201,6 @@
             "width": 3840,
             "date_captured": null,
             "id": 9
-        },
-        {
-            "license": 0,
-            "url": null,
-            "file_name": "images/10.png",
-            "height": 2160,
-            "width": 3840,
-            "date_captured": null,
-            "id": 10
-        },
-        {
-            "license": 0,
-            "url": null,
-            "file_name": "images/11.png",
-            "height": 2160,
-            "width": 3840,
-            "date_captured": null,
-            "id": 11
         }
     ],
     "annotations": [
@@ -420,51 +402,6 @@
         {
             "id": 13,
             "image_id": 7,
-            "category_id": 3,
-            "bbox": [
-                2915.7142857142853,
-                1608.5714285714284,
-                154.28571428571422,
-                144.28571428571422
-            ],
-            "area": 22261.2244897959,
-            "iscrowd": 0,
-            "ignore": 0,
-            "segmentation": []
-        },
-        {
-            "id": 14,
-            "image_id": 7,
-            "category_id": 4,
-            "bbox": [
-                3204.6242774566476,
-                1592.8571428571427,
-                130.3757225433519,
-                172.4029727497939
-            ],
-            "area": 22477.16214087619,
-            "iscrowd": 0,
-            "ignore": 0,
-            "segmentation": []
-        },
-        {
-            "id": 15,
-            "image_id": 8,
-            "category_id": 5,
-            "bbox": [
-                2348.159509202454,
-                1230.3527607361964,
-                84.35582822085871,
-                91.71779141104298
-            ],
-            "area": 7736.930257066492,
-            "iscrowd": 0,
-            "ignore": 0,
-            "segmentation": []
-        },
-        {
-            "id": 16,
-            "image_id": 9,
             "category_id": 17,
             "bbox": [
                 1307.2451398767187,
@@ -478,8 +415,8 @@
             "segmentation": []
         },
         {
-            "id": 17,
-            "image_id": 10,
+            "id": 14,
+            "image_id": 8,
             "category_id": 10,
             "bbox": [
                 1853.1407787762087,
@@ -493,16 +430,61 @@
             "segmentation": []
         },
         {
+            "id": 15,
+            "image_id": 9,
+            "category_id": 5,
+            "bbox": [
+                3519.130434782608,
+                1844.3478260869563,
+                130.43478260869597,
+                140.86956521739125
+            ],
+            "area": 18374.291115311946,
+            "iscrowd": 0,
+            "ignore": 0,
+            "segmentation": []
+        },
+        {
+            "id": 16,
+            "image_id": 9,
+            "category_id": 4,
+            "bbox": [
+                3188.6956521739125,
+                1596.5217391304345,
+                152.17391304347848,
+                166.08695652173924
+            ],
+            "area": 25274.10207939514,
+            "iscrowd": 0,
+            "ignore": 0,
+            "segmentation": []
+        },
+        {
+            "id": 17,
+            "image_id": 9,
+            "category_id": 3,
+            "bbox": [
+                2924.347826086956,
+                1595.6521739130433,
+                150.43478260869597,
+                168.695652173913
+            ],
+            "area": 25377.693761814793,
+            "iscrowd": 0,
+            "ignore": 0,
+            "segmentation": []
+        },
+        {
             "id": 18,
-            "image_id": 11,
+            "image_id": 9,
             "category_id": 6,
             "bbox": [
-                3194.736842105263,
-                1592.0614035087717,
-                136.84210526315792,
-                171.9298245614034
+                2665.2173913043475,
+                1594.782608695652,
+                146.086956521739,
+                171.304347826087
             ],
-            "area": 23527.239150507838,
+            "area": 25025.330812854427,
             "iscrowd": 0,
             "ignore": 0,
             "segmentation": []

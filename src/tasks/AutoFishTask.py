@@ -2,7 +2,7 @@ from qfluentwidgets import FluentIcon
 import time
 import cv2
 
-from ok import Logger
+from ok import Logger, TaskDisabledException
 from src.tasks.BaseDNATask import BaseDNATask
 from src.tasks.DNAOneTimeTask import DNAOneTimeTask
 
@@ -13,6 +13,10 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
     """AutoFishTask
     无悠闲全自动钓鱼
     """
+    BAR_MIN_AREA = 1200
+    ICON_MIN_AREA = 70
+    ICON_MAX_AREA = 400
+    CONTROL_ZONE_RATIO = 0.25
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,10 +28,6 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
         # 默认配置（会被 configs/AutoFishTask.json 覆盖）
         self.default_config.update(
             {
-                "BAR_MIN_AREA": 1200,
-                "ICON_MIN_AREA": 70,
-                "ICON_MAX_AREA": 400,
-                "CONTROL_ZONE_RATIO": 0.25,  # 控制区域占鱼条高度的比例
                 "MAX_ROUNDS": 100,
                 "END_WAIT_SPACE": 1.0,
                 "MAX_START_SEC": 20.0,
@@ -42,10 +42,6 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
         # 配置描述（便于GUI显示）
         self.config_description.update(
             {
-                "BAR_MIN_AREA": "鱼条最小面积(像素)",
-                "ICON_MIN_AREA": "鱼标最小面积(像素)",
-                "ICON_MAX_AREA": "鱼标最大面积(像素)",
-                "CONTROL_ZONE_RATIO": "鱼标按空格区域占比(0-0.5)",
                 "MAX_ROUNDS": "最大轮数(0=无限制)",
                 "END_WAIT_SPACE": "每轮结束等待时间(秒)",
                 "MAX_START_SEC": "开始阶段超时(秒)",
@@ -64,10 +60,23 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
             "chance_used": 0,  # 授渔以鱼使用次数
         }
 
+    def run(self):
+        DNAOneTimeTask.run(self)
+        try:
+            return self.do_run()
+        except TaskDisabledException as e:
+            pass
+        except Exception as e:
+            logger.error("AutoFishTask error", e)
+            raise
+
     def find_fish_cast(self) -> tuple[bool, tuple]:
         """查找 fish_cast 图标（抛竿/收杆），返回 (found, center)"""
         CAST_THRESHOLD = 0.8  # fish_cast 匹配阈值
-        box = self.find_one("fish_cast", threshold=CAST_THRESHOLD) or self.find_one("fish_ease", threshold=CAST_THRESHOLD)
+        fish_box = self.box_of_screen_scaled(
+            3840, 2160, 3147, 1566, 3383, 1797, name="fish_bite"
+        )
+        box = self.find_one("fish_cast", box=fish_box, threshold=CAST_THRESHOLD) or self.find_one("fish_ease", box=fish_box, threshold=CAST_THRESHOLD)
         if box:
             return True, (box.x + box.width // 2, box.y + box.height // 2)
         return False, (0, 0)
@@ -75,10 +84,10 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
     def find_fish_bite(self) -> tuple[bool, tuple]:
         """查找 fish_bite 图标（等待鱼上钩），返回 (found, center)"""
         BITE_THRESHOLD = 0.8  # fish_bite 匹配阈值
-        fish_bite_box = self.box_of_screen_scaled(
-            2560, 1440, 2113, 1057, 2244, 1174, name="fish_bite"
+        fish_box = self.box_of_screen_scaled(
+            3840, 2160, 3147, 1566, 3383, 1797, name="fish_bite"
         )
-        box = self.find_one("fish_bite", box=fish_bite_box, threshold=BITE_THRESHOLD)
+        box = self.find_one("fish_bite", box=fish_box, threshold=BITE_THRESHOLD)
         if box:
             return True, (box.x + box.width // 2, box.y + box.height // 2)
         return False, (0, 0)
@@ -86,7 +95,10 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
     def find_fish_chance(self) -> tuple[bool, tuple]:
         """查找 fish_chance 图标（授渔以鱼），返回 (found, center)"""
         CHANCE_THRESHOLD = 0.8  # fish_chance 匹配阈值
-        box = self.find_one("fish_chance", threshold=CHANCE_THRESHOLD)
+        fish_chance_box = self.box_of_screen_scaled(
+            3840, 2160, 3509, 1835, 3666, 1999, name="fish_chance"
+        )
+        box = self.find_one("fish_chance", box=fish_chance_box, threshold=CHANCE_THRESHOLD)
         if box:
             return True, (box.x + box.width // 2, box.y + box.height // 2)
         return False, (0, 0)
@@ -107,6 +119,7 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
         try:
             frame = self.frame
             frame_height, frame_width = frame.shape[:2]
+            res_ratio = frame_height / 1080
             # Box 对象使用 x, y, width, height 属性
             box_x1, box_y1 = box.x, box.y
             box_x2, box_y2 = box.x + box.width, box.y + box.height
@@ -131,11 +144,27 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
             blobs = []
             for contour in contours:
                 area = cv2.contourArea(contour)
-                if area > cfg.get("ICON_MIN_AREA", 70):
+                if area > self.ICON_MIN_AREA * res_ratio ** 2:
                     blobs.append({"contour": contour, "area": area})
 
             # 按面积降序排列
             blobs.sort(key=lambda b: b["area"], reverse=True)
+            
+            #Debug only
+            # output_img = frame[box_y1:box_y2, box_x1:box_x2].copy()
+            # colors = [
+            #     (0, 0, 255),     # 红
+            #     (0, 255, 0),     # 绿
+            #     (255, 0, 0),     # 蓝
+            #     (0, 255, 255),   # 黄
+            #     (255, 0, 255),   # 紫
+            #     (255, 255, 0),   # 青
+            #     (255, 255, 255), # 白
+            # ]
+            # for i, blob in enumerate(blobs):
+            #     color = colors[i % len(colors)]  # 超过列表长度循环使用
+            #     cv2.drawContours(output_img, [blob["contour"]], -1, color, 2)
+            #Debug only
 
             has_bar = has_icon = False
             bar_center = bar_rect = icon_center = icon_rect = None
@@ -143,7 +172,7 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
 
             # 查找鱼条（最大的符合条件的轮廓）
             for blob in blobs:
-                if blob["area"] > cfg.get("BAR_MIN_AREA", 1200):
+                if blob["area"] > self.BAR_MIN_AREA * res_ratio ** 2:
                     contour = blob["contour"]
                     moments = cv2.moments(contour)
                     if moments["m00"] > 0:
@@ -163,11 +192,7 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
             for blob in blobs:
                 if blob["area"] == bar_area:
                     continue
-                if (
-                    cfg.get("ICON_MIN_AREA", 70)
-                    < blob["area"]
-                    < cfg.get("ICON_MAX_AREA", 400)
-                ):
+                if self.ICON_MIN_AREA * res_ratio ** 2 < blob["area"] < self.ICON_MAX_AREA * res_ratio ** 2:
                     contour = blob["contour"]
                     moments = cv2.moments(contour)
                     if moments["m00"] > 0:
@@ -182,6 +207,17 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
                         icon_rect = (x, y, x + w, y + h)
                     break
 
+            if has_bar:
+                zone_ratio = bar_area / box.area()
+                if self.CONTROL_ZONE_RATIO <= 0 or abs(zone_ratio - self.CONTROL_ZONE_RATIO) / self.CONTROL_ZONE_RATIO > 0.1:
+                    self.CONTROL_ZONE_RATIO = zone_ratio
+                    self.log_info(f"set CONTROL_ZONE_RATIO {self.CONTROL_ZONE_RATIO}")
+
+            #Debug only
+            # cv2.imshow("Contours", output_img)
+            # cv2.waitKey(1)
+            #Debug only
+
             # 更新统计信息
             self.stats.update(
                 {
@@ -193,7 +229,9 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
             )
 
             return (has_bar, bar_center, bar_rect), (has_icon, icon_center, icon_rect)
-
+        except TaskDisabledException as e:
+            cv2.destroyAllWindows()
+            raise TaskDisabledException
         except Exception as e:
             logger.error(f"find_bar_and_fish_by_area error: {e}")
             return (False, None, None), (False, None, None)
@@ -233,48 +271,67 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
             self.send_key("space", down_time=0.06)
 
         logger.info("等待fish_bite出现...")
-        poll_interval = 0.01
-        while time.monotonic() < start_deadline:
-            has_bite_icon, _ = self.find_fish_bite()
-            self.stats["last_bite_icon_found"] = has_bite_icon
-            if has_bite_icon:
-                logger.info("找到fish_bite -> 等待鱼咬钩")
-                break
-            self.sleep(poll_interval)
+        ret = self.wait_until(lambda: self.find_fish_bite()[0], time_out=start_deadline, raise_if_not_found=False)
+        self.stats["last_bite_icon_found"] = ret
+        if ret:
+            logger.info("找到fish_bite -> 等待鱼咬钩")
         else:
             logger.info("超时：等待fish_bite出现")
             return False
 
+        # poll_interval = 0.01
+        # while time.monotonic() < start_deadline:
+        #     has_bite_icon, _ = self.find_fish_bite()
+        #     self.stats["last_bite_icon_found"] = has_bite_icon
+        #     if has_bite_icon:
+        #         logger.info("找到fish_bite -> 等待鱼咬钩")
+        #         break
+        #     self.sleep(poll_interval)
+        # else:
+        #     logger.info("超时：等待fish_bite出现")
+        #     return False
+
         # 等待 fish_bite 消失（鱼咬钩了）
         logger.info("等待鱼咬钩...")
         bite_gone_stable_time = 0.5  # 咬钩消失稳定时间
-        absent_start = None
-        while time.monotonic() < start_deadline:
-            has_bite_icon, _ = self.find_fish_bite()
-            self.stats["last_bite_icon_found"] = has_bite_icon
-            if not has_bite_icon:
-                if absent_start is None:
-                    absent_start = time.monotonic()
-                elif time.monotonic() - absent_start >= bite_gone_stable_time:
-                    logger.info("fish_bite已消失 -> 鱼咬钩了！")
-                    break
-            else:
-                absent_start = None
-            self.sleep(poll_interval)
-        else:
+        ret = self.wait_until(lambda: not self.find_fish_bite()[0], time_out=start_deadline, settle_time=bite_gone_stable_time)
+        self.stats["last_bite_icon_found"] = not ret
+        if not ret:
             logger.info("等待fish_bite消失超时")
             return False
+        # absent_start = None
+        # while time.monotonic() < start_deadline:
+        #     has_bite_icon, _ = self.find_fish_bite()
+        #     self.stats["last_bite_icon_found"] = has_bite_icon
+        #     if not has_bite_icon:
+        #         if absent_start is None:
+        #             absent_start = time.monotonic()
+        #         elif time.monotonic() - absent_start >= bite_gone_stable_time:
+        #             logger.info("fish_bite已消失 -> 鱼咬钩了！")
+        #             break
+        #     else:
+        #         absent_start = None
+        #     self.sleep(poll_interval)
+        # else:
+        #     logger.info("等待fish_bite消失超时")
+        #     return False
 
         # 等待 fish_cast 出现（收杆提示）
         logger.info("等待fish_cast出现（收杆提示）...")
-        while time.monotonic() < start_deadline:
-            has_cast_icon, _ = self.find_fish_cast()
-            self.stats["last_cast_icon_found"] = has_cast_icon
-            if has_cast_icon:
-                logger.info("找到fish_cast -> 按下空格收杆，进入溜鱼阶段")
-                self.send_key("space", down_time=0.06)
-                return True
-            self.sleep(poll_interval)
+        ret = self.wait_until(lambda: self.find_fish_cast()[0], time_out=start_deadline)
+        self.stats["last_cast_icon_found"] = ret
+        if ret:
+            logger.info("找到fish_cast -> 按下空格收杆，进入溜鱼阶段")
+            self.send_key("space", down_time=0.06)
+            return True
+        # while time.monotonic() < start_deadline:
+        #     has_cast_icon, _ = self.find_fish_cast()
+        #     self.stats["last_cast_icon_found"] = has_cast_icon
+        #     if has_cast_icon:
+        #         logger.info("找到fish_cast -> 按下空格收杆，进入溜鱼阶段")
+        #         self.send_key("space", down_time=0.06)
+        #         return True
+        #     self.sleep(poll_interval)
 
         logger.info("超时：等待fish_cast出现")
         return False
@@ -346,7 +403,7 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
                         bar_height = 1
 
                     # 计算控制区域边界
-                    control_zone_ratio = cfg.get("CONTROL_ZONE_RATIO", 0.25)
+                    control_zone_ratio = self.CONTROL_ZONE_RATIO
                     control_height = int(bar_height * control_zone_ratio)
                     control_top = bar_top + control_height
                     control_bottom = bar_bottom - control_height
@@ -389,13 +446,16 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
 
                 icon_was_visible_prev = has_icon
 
-                self.sleep(tick)
+                self.next_frame()
 
-            return False
+        except TaskDisabledException as e:
+            raise TaskDisabledException
         finally:
             # 释放按键
             try:
                 self.send_key_up("space")
+            except TaskDisabledException as e:
+                raise TaskDisabledException
             except Exception:
                 pass
 
@@ -431,7 +491,7 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
         return False
 
     # main run
-    def run(self):
+    def do_run(self):
         cfg = self.config
         max_rounds = cfg.get("MAX_ROUNDS", 0)
 
@@ -525,6 +585,8 @@ class AutoFishTask(DNAOneTimeTask, BaseDNATask):
                 # 继续下一轮
                 self.sleep(1.0)
                 self.sleep(1.0)
+            except TaskDisabledException as e:
+                raise TaskDisabledException
             except Exception as e:
                 logger.error(f"AutoFishTask fatal: {e}")
                 break
