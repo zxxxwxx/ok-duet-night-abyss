@@ -104,7 +104,10 @@ class BaseDNATask(BaseTask):
 
     def check_for_monthly_card(self):
         if self.should_check_monthly_card():
-            self.handle_monthly_card()
+            start = time.time()
+            ret = self.handle_monthly_card()
+            cost = time.time() - start
+            return ret, cost
             # start = time.time()
             # logger.info(f'check_for_monthly_card start check')
             # if self.in_combat():
@@ -116,7 +119,7 @@ class BaseDNATask(BaseTask):
             #     logger.info(f'wait monthly card end {monthly_card}')
             #     cost = time.time() - start
             #     return cost
-        return 0
+        return False, 0
     
     def should_check_monthly_card(self):
         if self.next_monthly_card_start > 0:

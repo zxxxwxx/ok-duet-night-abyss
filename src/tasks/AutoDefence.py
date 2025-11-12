@@ -91,11 +91,13 @@ class AutoDefence(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             if _status == Mission.START:
                 self.wait_until(self.in_team, time_out=30)
                 self.sleep(2)
-                if self.external_movement() == False:
+                if self.external_movement is not _default_movement:
+                    self.log_info("任务开始")
+                    if not self.external_movement():
+                        self.open_in_mission_menu()
+                else:
                     self.log_info_notify("任务开始")
                     self.soundBeep()
-                else:
-                    self.log_info("任务开始")
                 self.init_param()
             elif _status == Mission.STOP:
                 self.quit_mission()

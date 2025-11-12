@@ -22,6 +22,9 @@ from src.tasks.AutoExploration import AutoExploration
 
 logger = Logger.get_logger(__name__)
 
+class MacroFailedException(Exception):
+    """外部脚本失败异常。"""
+    pass
 
 class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
 
@@ -74,6 +77,7 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         self.img = self.load_png_files(f'{path}\mod\{self.config.get('外部文件夹')}\map')
         DNAOneTimeTask.run(self)
         self.move_mouse_to_safe_position()
+        self.set_check_monthly_card()
         _to_do_task = self
         try:
             if self.config.get('副本类型') == '扼守无尽':
@@ -131,7 +135,8 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                     self.log_info('任务完成')
                 self.wait_until(self.in_team, time_out=30)                  
                 self.sleep(2)
-                self.walk_to_aim()
+                if not self.walk_to_aim():
+                    self.open_in_mission_menu()
                 _wave_start = time.time()
                 _delay_task_start = _wave_start + 1
                 self.current_wave = -1 
@@ -198,7 +203,13 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
                     return True
             if map_index is not None:            
                 self.log_info(f'执行{map_index}')
-                self.play_macro_actions(map_index)
+                try:
+                    self.play_macro_actions(map_index)
+                except MacroFailedException:
+                    return False
+                except Exception as e:
+                    logger.error("ImportTask error", e)
+                    raise
                 former_index = map_index
             else:
                 return True
@@ -249,6 +260,8 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         start = time.time()
         for i, action in enumerate(actions): 
             while time.time()-start < action['time']:
+                if self.check_for_monthly_card()[0]:
+                    raise MacroFailedException
                 self.next_frame()   
             if action['type'] == "delay":
                 self.delay_index = map_index
