@@ -205,6 +205,7 @@ class CommissionsTask(BaseDNATask):
         action_timeout = self.safe_get("action_timeout", timeout)
         if self.config.get("自动选择首个密函和密函奖励", False):
             if self.find_letter_interface():
+                self.sleep(0.5)
                 self.move_mouse_to_safe_position()
                 self.click(0.56, 0.5)
                 self.move_back_from_safe_position()
@@ -235,13 +236,13 @@ class CommissionsTask(BaseDNATask):
                           and self.find_next_hint(0.33, 0.64, 0.40, 0.67, r'[:：]'),
             time_out=4)
         if self.find_next_hint(0.33, 0.64, 0.40, 0.67, r'[:：]0'):
-            self.log_info("选择第一个奖励", True)
+            self.log_info_notify("选择第一个奖励")
             self.click(0.36, 0.66, after_sleep=0.5)
         elif self.find_next_hint(0.47, 0.64, 0.53, 0.67, r'[:：]0'):
-            self.log_info("选择第二个奖励", True)
+            self.log_info_notify("选择第二个奖励")
             self.click(0.50, 0.66, after_sleep=0.5)
         elif self.find_next_hint(0.60, 0.64, 0.67, 0.67, r'[:：]0'):
-            self.log_info("选择第三个奖励", True)
+            self.log_info_notify("选择第三个奖励")
             self.click(0.63, 0.66, after_sleep=0.5)
         else:
             self.log_info("未识别到持有数为0的奖励")

@@ -1,7 +1,5 @@
 from qfluentwidgets import FluentIcon
 import time
-import cv2
-import re
 
 from ok import Logger, TaskDisabledException
 from src.tasks.BaseCombatTask import BaseCombatTask
@@ -23,7 +21,7 @@ class AutoSkill(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         })
 
         self.setup_commission_config()
-        keys_to_remove = ["委托手册", "启用自动穿引共鸣", "自动选择首个密函和密函奖励"]
+        keys_to_remove = ["委托手册", "启用自动穿引共鸣", "自动选择首个密函和密函奖励", "优先选择持有数为0的密函奖励"]
         for key in keys_to_remove:
             self.default_config.pop(key, None)
 
@@ -38,7 +36,7 @@ class AutoSkill(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         DNAOneTimeTask.run(self)
         try:
             return self.do_run()
-        except TaskDisabledException as e:
+        except TaskDisabledException:
             pass
         except Exception as e:
             logger.error('AutoCombatSkill error', e)
