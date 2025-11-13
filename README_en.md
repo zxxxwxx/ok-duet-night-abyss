@@ -33,7 +33,7 @@ This software is an open-source, free external tool intended for learning and di
 
 ## ✨ Main Features
 
-<img width="100%" alt="Feature Demonstration" src="https://github.com/user-attachments/assets/cb7f145b-b304-4a0e-891a-3b6d5acff65d" />
+<img width="1586" height="1142" alt="QQ_1763005086472" src="https://github.com/user-attachments/assets/c78b5acc-b08a-4dfe-98c9-49389711a7a8" />
 
 *   **Automated Dungeon Farming**
     *   Supports fully automatic and semi-automatic modes
