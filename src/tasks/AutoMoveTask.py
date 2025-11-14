@@ -31,7 +31,7 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
         })
         self.manual_activate = False
         self.signal = False
-        self.signal_left = False
+        self.signal_interrupt = False
         self.is_down = False
 
     def disable(self):
@@ -48,14 +48,13 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
     def reset(self):
         self.manual_activate = False
         self.signal = False
-        self.signal_left = False
+        self.signal_interrupt = False
 
     def run(self):
-        if not self.scene.in_team(self.in_team_and_world):
-            return
-        
         if self.signal:
             self.signal = False
+            if not self.scene.in_team(self.in_team_and_world):
+                return
             if og.device_manager.hwnd_window.is_foreground():
                 self.switch_state()
 
@@ -65,6 +64,7 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
             except TriggerDeactivateException as e:
                 logger.info(f'auto_move_task_deactivate {e}')
                 break
+            
         if self.is_down:
             self.is_down = False
             self.mouse_up()
@@ -84,7 +84,7 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
             s = step if remaining > step else remaining
             self.sleep(s)
             remaining -= s
-            if not (self.signal_left or
+            if not (self.signal_interrupt or
                     (check_signal_flag and self.signal) or
                     not self.scene.in_team(self.in_team_and_world)):
                 continue
@@ -93,7 +93,7 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
                 raise TriggerDeactivateException()
 
     def switch_state(self):
-        self.signal_left = False
+        self.signal_interrupt = False
         self.signal = False
         self.manual_activate = not self.manual_activate
         if self.manual_activate:
@@ -115,7 +115,7 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
             if button == btn:
                 self.signal = True
             elif button == mouse.Button.left and self.manual_activate:
-                self.signal_left = True
+                self.signal_interrupt = True
 
     def on_global_press(self, key):
         if self._executor.paused or self.config.get('激活键', 'x2') != '使用键盘':

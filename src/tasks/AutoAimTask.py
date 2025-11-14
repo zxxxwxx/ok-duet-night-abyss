@@ -1,4 +1,5 @@
 from ok import TriggerTask, Logger, og
+from src.scene.DNAScene import DNAScene
 from src.tasks.BaseCombatTask import BaseCombatTask, CharDeadException
 from src.tasks.BaseListenerTask import BaseListenerTask
 
@@ -18,6 +19,7 @@ class AutoAimTask(BaseListenerTask, BaseCombatTask, TriggerTask):
         super().__init__(*args, **kwargs)
         self.name = "自动花序弓蓄力瞄准"
         self.description = "需主动激活，运行中可使用右键或左键打断"
+        self.scene: DNAScene | None = None
         self.setup_listener_config()
         self.default_config.update(
             {
@@ -42,22 +44,25 @@ class AutoAimTask(BaseListenerTask, BaseCombatTask, TriggerTask):
         """禁用任务时，断开信号连接。"""
         self.try_disconnect_listener()
         return super().disable()
+    
+    def enable(self):
+        """启用任务时，信号连接。"""
+        self.reset()
+        self.try_connect_listener()
+        return super().enable()
 
     def reset(self):
         self.manual_activate = False
         self.signal = False
         self.signal_interrupt = False
 
-    def run(self):
-        self.try_connect_listener()
-
+    def run(self):        
         if self.signal:
             self.signal = False
-            if self.in_team() and og.device_manager.hwnd_window.is_foreground():
+            if not self.scene.in_team(self.in_team_and_world):
+                return
+            if og.device_manager.hwnd_window.is_foreground():
                 self.switch_state()
-
-        if not self.in_team():
-            return
 
         while self.manual_activate:
             try:
@@ -68,7 +73,9 @@ class AutoAimTask(BaseListenerTask, BaseCombatTask, TriggerTask):
             except TriggerDeactivateException as e:
                 logger.info(f"auto_aim_task_deactivate {e}")
                 break
+            
         if self.is_down:
+            self.is_down = False
             self.mouse_up(key="right")
         return
 
@@ -87,8 +94,10 @@ class AutoAimTask(BaseListenerTask, BaseCombatTask, TriggerTask):
             s = step if remaining > step else remaining
             self.sleep(s)
             remaining -= s
-            if (self.signal and check_signal_flag) or self.signal_interrupt:
-                self.switch_state()
+            if not (self.signal_interrupt or
+                    (check_signal_flag and self.signal)):
+                continue
+            self.switch_state()
             if not self.manual_activate:
                 raise TriggerDeactivateException()
 
