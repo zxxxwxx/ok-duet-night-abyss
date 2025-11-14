@@ -147,5 +147,5 @@ config = {
         ["src.tasks.AutoMoveTask", "AutoMoveTask"],
         ["src.tasks.AutoAimTask", "AutoAimTask"],
         ["src.tasks.AutoRogueDialogTask", "AutoRogueDialogTask"],
-    ]
+    ], 'scene': ["src.scene.DNAScene", "DNAScene"],
 }

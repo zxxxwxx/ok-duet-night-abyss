@@ -25,6 +25,9 @@ class BaseDNATask(BaseTask):
         if self.find_one('lv_text', threshold=0.8):
             return True
         return False
+    
+    def in_team_and_world(self):
+        return self.in_team()
 
     def ensure_main(self, esc=True, time_out=30):
         self.info_set('current task', 'wait main')
@@ -98,11 +101,11 @@ class BaseDNATask(BaseTask):
             abs_pos = self.executor.interaction.capture.get_abs_cords(self.width_of_screen(0.95),
                                                                       self.height_of_screen(0.6))
             win32api.SetCursorPos(abs_pos)
-            self.sleep(0.02)
+            self.sleep(0.01)
 
     def move_back_from_safe_position(self):
         if self.afk_config["防止鼠标干扰"] and self.old_mouse_pos is not None:
-            self.sleep(0.02)
+            self.sleep(0.01)
             win32api.SetCursorPos(self.old_mouse_pos)
             self.old_mouse_pos = None
 

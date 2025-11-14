@@ -420,18 +420,18 @@ class QuickMoveTask:
         self.owner._move_task = None
 
     def run(self):
-        if not hasattr(self.owner, "config"):
-            return
         if self.owner.config.get("启用自动穿引共鸣", False):
             if not self.owner._move_task:
                 from src.tasks.AutoMoveTask import AutoMoveTask
 
                 self.owner._move_task = self.owner.get_task_by_class(AutoMoveTask)
+            self.owner._move_task.try_connect_listener()
             self.owner._move_task.run()
 
     def reset(self):
         if self.owner._move_task:
             self.owner._move_task.reset()
+            self.owner._move_task.try_disconnect_listener()
 
 
 setting_menu_selected_color = {

@@ -1,8 +1,9 @@
 from ok import TriggerTask, Logger, og
+from src.scene.DNAScene import DNAScene
 from src.tasks.BaseDNATask import BaseDNATask
 from src.tasks.BaseListenerTask import BaseListenerTask
 
-from pynput import mouse, keyboard
+from pynput import mouse
 
 logger = Logger.get_logger(__name__)
 
@@ -18,6 +19,7 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
         super().__init__(*args, **kwargs)
         self.name = "自动穿引共鸣"
         self.description = "需主动激活，运行中也可使用左键打断"
+        self.scene: DNAScene | None = None
         self.setup_listener_config()
         self.default_config.update({
             '按下时间': 0.50,
@@ -36,6 +38,12 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
         """禁用任务时，断开信号连接。"""
         self.try_disconnect_listener()
         return super().disable()
+    
+    def enable(self):
+        """启用任务时，信号连接。"""
+        self.reset()
+        self.try_connect_listener()
+        return super().enable()
 
     def reset(self):
         self.manual_activate = False
@@ -43,15 +51,13 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
         self.signal_left = False
 
     def run(self):
-        self.try_connect_listener()
-
+        if not self.scene.in_team(self.in_team_and_world):
+            return
+        
         if self.signal:
             self.signal = False
-            if self.in_team() and og.device_manager.hwnd_window.is_foreground():
+            if og.device_manager.hwnd_window.is_foreground():
                 self.switch_state()
-
-        if not self.in_team():
-            return
 
         while self.manual_activate:
             try:
@@ -62,7 +68,6 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
         if self.is_down:
             self.is_down = False
             self.mouse_up()
-        return
 
     def do_move(self):
         self.mouse_down()
@@ -79,8 +84,11 @@ class AutoMoveTask(BaseListenerTask, BaseDNATask, TriggerTask):
             s = step if remaining > step else remaining
             self.sleep(s)
             remaining -= s
-            if (check_signal_flag and self.signal or not self.in_team()) or self.signal_left:
-                self.switch_state()
+            if not (self.signal_left or
+                    (check_signal_flag and self.signal) or
+                    not self.scene.in_team(self.in_team_and_world)):
+                continue
+            self.switch_state()
             if not self.manual_activate:
                 raise TriggerDeactivateException()
 

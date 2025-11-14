@@ -1,5 +1,5 @@
 from ok import Logger, og
-from pynput import mouse, keyboard
+from pynput import keyboard
 
 logger = Logger.get_logger(__name__)
 
@@ -25,14 +25,14 @@ class BaseListenerTask:
 
     def try_disconnect_listener(self):
         if self.connected:
-            logger.debug("disconnect listener")
+            logger.debug(f"{self.__class__.__name__} disconnect listener")
             og.my_app.clicked.disconnect(self.on_global_click)
             og.my_app.pressed.disconnect(self.on_global_press)
             self.connected = False
 
     def try_connect_listener(self):
         if not self.connected:
-            logger.debug("connect listener")
+            logger.debug(f"{self.__class__.__name__} connect listener")
             og.my_app.clicked.connect(self.on_global_click)
             og.my_app.pressed.connect(self.on_global_press)
             self.connected = True

@@ -2,6 +2,7 @@ import re
 
 from ok import TriggerTask, Logger
 from src.tasks.BaseDNATask import BaseDNATask
+from src.scene.DNAScene import DNAScene
 
 logger = Logger.get_logger(__name__)
 
@@ -12,13 +13,14 @@ class AutoRogueDialogTask(BaseDNATask, TriggerTask):
         super().__init__(*args, **kwargs)
         self.name = "自动肉鸽对话"
         self.description = "自动点击肉鸽对话"
+        self.scene: DNAScene | None = None
         self.default_config.update({
             '跳过对话': False,
         })
         self.template_shape = None
 
     def run(self):
-        if self.in_team():
+        if self.scene.in_team(self.in_team_and_world):
             return
         if not self.config.get('跳过对话', False):
             if self.template_shape != self.frame.shape[:2]:
@@ -33,7 +35,6 @@ class AutoRogueDialogTask(BaseDNATask, TriggerTask):
                     match=re.compile("space", re.IGNORECASE)):
                 self.send_key("space", down_time=2.5)
                 self.sleep(1)
-        self.next_frame()
 
     def init_box(self):
         self.rogue_dialog_box = self.box_of_screen_scaled(2560, 1440, 1504, 854, 1555, 1224, name="rogue_dialog",

@@ -1,6 +1,7 @@
 from ok import TriggerTask, Logger
 from src.tasks.BaseCombatTask import BaseCombatTask, NotInCombatException, CharDeadException
 from src.tasks.BaseListenerTask import BaseListenerTask
+from src.scene.DNAScene import DNAScene
 
 from pynput import mouse
 
@@ -13,30 +14,36 @@ class AutoCombatTask(BaseListenerTask, BaseCombatTask, TriggerTask):
         super().__init__(*args, **kwargs)
         self.name = "自动战斗"
         self.description = "需主动激活"
+        self.scene: DNAScene | None = None
         self.setup_listener_config()
         self.default_config.update({
             "技能": "普攻",
             "释放间隔": 0.1,
         })
         self.config_type["技能"] = {"type": "drop_down", "options": ["普攻", "按住普攻", "战技", "终结技"]}
-        self.connected = False
 
     def disable(self):
         """禁用任务时，断开信号连接。"""
         self.try_disconnect_listener()
         return super().disable()
+    
+    def enable(self):
+        """启用任务时，信号连接。"""
+        self.try_connect_listener()
+        return super().enable()
 
     def run(self):
-        self.try_connect_listener()
-
         ret = False
+        if not self.scene.in_team(self.in_team_and_world):
+            return ret
+        
         _mouse_down = False
         while self.in_combat():
             if not ret:
                 n = self.config.get("释放间隔", 0.1)
                 interval = 0.1 if n < 0.1 else n
                 char = self.get_current_char()
-            ret = True
+                ret = True
             try:
                 skill = self.config.get("技能", "普攻")
                 if skill == "战技":
