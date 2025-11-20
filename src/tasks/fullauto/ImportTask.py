@@ -41,6 +41,8 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         self.description = "全自动"
         self.group_name = "全自动"
         self.group_icon = FluentIcon.CAFE
+        self.last_f_time = 0
+        self.last_f_was_interact = False
 
         self.default_config.update({
             '轮次': 10,
@@ -421,15 +423,47 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         if key == 'lshift':
             key = self.get_dodge_key()
         elif key == 'f':
-            key = self.get_interact_key()
+            key = self._resolve_f_key(action_type)
         elif key == '4':
             key = self.get_spiral_dive_key()
+        elif key == 'e':
+            key = self.get_combat_key()
+        elif key == 'q':
+            key = self.get_ultimate_key()
 
         # 4. 执行实际按键操作
         if action_type == "key_down":
             self.send_key_down(key)
         elif action_type == "key_up":
             self.send_key_up(key)
+
+    def _resolve_f_key(self, action_type):
+        """
+        解析 F 键的具体行为：
+        - 间隔 >= 3秒：视为交互 (Interact)
+        - 间隔 < 3秒：视为快速破解 (Original F)
+        """
+        if action_type == "key_down":
+            current_time = time.time()
+            last_time = self.last_f_time
+            if current_time - last_time >= 3.0:
+                # 判定为交互
+                self.last_f_time = current_time
+                self.last_f_was_interact = True
+                resolved_key = self.get_interact_key()
+                return resolved_key
+            else:
+                # 判定为快速破解 (频繁按下)
+                self.last_f_was_interact = False
+                return 'f'
+        
+        else: # key_up
+            # 根据按下时的判定结果，释放对应的键
+            if self.last_f_was_interact:
+                self.last_f_was_interact = False
+                return self.get_interact_key()
+            else:
+                return 'f'
 
     def execute_mouse_rotation(self, action):
         direction = action.get("direction", "up")

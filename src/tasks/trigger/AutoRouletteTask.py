@@ -332,7 +332,13 @@ class AutoRouletteTask(BaseDNATask, TriggerTask):
             return
         else:
             self.sleep(0.1)
-        
+        f_search_box = self.box_of_screen_scaled(2560, 1440, 2275, 1235, 2365, 1315, name="f_search", hcenter=True)
+        f = self.find_best_match_in_box(f_search_box, ["pick_up_f"], threshold=0.8)
+        if f :
+            self.sleep(0.5)
+            self.send_key("f", after_sleep=1)
+            self._unlocked = True
+            return
         while True:
             self.get_croppe_img()
             img_mech = self.get_img_mech()
