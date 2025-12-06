@@ -88,7 +88,8 @@ class AutoExploration_Fast(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
             logger.error('AutoDefence error', e)
             raise
 
-    def walk_to_aim(self):
+    def walk_to_aim(self, delay=0):
+        self.sleep(delay)
         map_selection = self.config.get("地图选择", [])
         
         # 检测当前地图类型
