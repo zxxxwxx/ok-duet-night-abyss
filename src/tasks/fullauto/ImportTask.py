@@ -48,7 +48,7 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         })
         self.config_type['外部文件夹'] = {
             "type": "drop_down",
-            "options": self.load_direct_folder(f'{Path.cwd()}\mod'),
+            "options": self.load_direct_folder(fr'{Path.cwd()}\mod'),
         }
 
         self.config_type['副本类型'] = {
@@ -76,8 +76,8 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
         self.set_check_monthly_card()
         try:
             path = Path.cwd()
-            self.script = self.process_json_files(f'{path}\mod\{self.config.get("外部文件夹")}\scripts')
-            self.img = self.load_png_files(f'{path}\mod\{self.config.get("外部文件夹")}\map')
+            self.script = self.process_json_files(fr'{path}\mod\{self.config.get("外部文件夹")}\scripts')
+            self.img = self.load_png_files(fr'{path}\mod\{self.config.get("外部文件夹")}\map')
             if self.config.get('副本类型') == '扼守无尽':
                 _to_do_task = self.get_task_by_class(AutoDefence)
             elif self.config.get('副本类型') == '探险无尽':
@@ -165,9 +165,12 @@ class ImportTask(DNAOneTimeTask, CommissionsTask, BaseCombatTask):
 
     def load_direct_folder(self, path):
         folders = []
+        excluded_keywords = ("builtin", "示例-脚本工具")
         for item in os.listdir(path):
             item_path = os.path.join(path, item)
-            if os.path.isdir(item_path) and item != 'builtin':
+            if any(keyword in item_path for keyword in excluded_keywords):
+                continue
+            if os.path.isdir(item_path):
                 folders.append(item)
         return folders
 
