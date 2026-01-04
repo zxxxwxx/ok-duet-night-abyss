@@ -152,18 +152,26 @@ class CommissionsTask(BaseDNATask):
         self.wait_until(condition=is_mission_start_iface, time_out=60, raise_if_not_found=False)
 
     def continue_mission(self, timeout=0):
-        if self.in_team():
-            return False
-        action_timeout = self.action_timeout if timeout == 0 else timeout
-        continue_btn = self.wait_until(self.find_ingame_continue_btn, time_out=action_timeout, raise_if_not_found=True)
-        self.wait_until(
-            condition=lambda: not self.find_ingame_continue_btn(),
-            post_action=lambda: self.click_box_random(continue_btn, right_extend=0.1, up_extend=-0.002, down_extend=-0.002, post_sleep=0, after_sleep=0.25),
-            time_out=action_timeout,
-            raise_if_not_found=True,
-        )
-        self.sleep(0.5)
-        return True
+    if self.in_team():
+        return False
+    action_timeout = self.action_timeout if timeout == 0 else timeout
+    continue_btn = self.wait_until(self.find_ingame_continue_btn, time_out=action_timeout, raise_if_not_found=True)
+    
+    def double_click_continue():
+        # 第一次点击
+        self.click_box_random(continue_btn, right_extend=0.1, up_extend=-0.002, down_extend=-0.002, after_sleep=0.0)
+        self.sleep(0.5)  # 👈 间隔改为 0.5 秒
+        # 第二次点击（保险）
+        self.click_box_random(continue_btn, right_extend=0.1, up_extend=-0.002, down_extend=-0.002, after_sleep=0.25)
+
+    self.wait_until(
+        condition=lambda: not self.find_ingame_continue_btn(),
+        post_action=double_click_continue,
+        time_out=action_timeout,
+        raise_if_not_found=True,
+    )
+    self.sleep(0.5)
+    return True
 
     def choose_drop_rate(self, timeout=0):
         def click_drop_rate_btn():
